@@ -28,18 +28,28 @@ module Klient
       "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
     end
 
+# TODO: Fix collection request with resource identifier
     %i(delete get head).each do |mth|
-      define_method(mth) do |params = {}|
-      # define_method(mth) do |identifier = nil, params = {}|
-        @last_response = process_raw_response(
-          RestClient.send(mth, url, @headers)
-        )
+      define_method(mth) do |identifier = nil, params = {}|
+        if identifier
+# binding.pry
+          @last_response = process_raw_response(
+            RestClient.send(
+              mth,
+              @url_template.expand(@url_arguments.keys.first => identifier).to_s,
+              @headers
+            )
+          )
+        else
+          @last_response = process_raw_response(
+            RestClient.send(mth, url, @headers)
+          )
+        end
       end
     end
 
     %i(post put).each do |mth|
-      define_method(mth) do |doc, **params|
-
+      define_method(mth) do |identifier = nil, doc, **params|
         @last_response = process_raw_response(
           RestClient.send(mth, url, doc.to_json, @headers)
         )

@@ -52,4 +52,8 @@ module ResourceMethods
       klass.new(self)
     end
   end
+
+  def resources(*resource_names)
+    resource_names.each { |rname| resource rname }
+  end
 end
