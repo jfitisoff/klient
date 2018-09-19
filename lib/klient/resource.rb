@@ -1,6 +1,5 @@
 require_relative "resource_methods"
 require 'rest-client'
-RestClient.log = 'stdout'
 
 module Klient
   class Resource
