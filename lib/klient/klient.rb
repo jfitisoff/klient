@@ -3,12 +3,12 @@ require_relative "resource_methods"
 module Klient
   attr_reader :base_url, :headers, :collection_key, :url_template
 
-  def self.included(klass)
-    klass.extend(KlientClassMethods)
-  end
-
   module KlientClassMethods
     include ResourceMethods
+  end
+
+  def self.included(klass)
+    klass.extend(KlientClassMethods)
   end
 
   def initialize(base_url, headers = {})
