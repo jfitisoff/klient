@@ -5,7 +5,7 @@ RestClient.log = 'stdout'
 module Klient
   class Resource
     # attr_reader :collection_accessor, :identifier, :last_response, :name, :parent, :headers, :url_arguments, :url_template
-    attr_reader :collection_accessor, :parent, :url_arguments, :url_template
+    attr_reader :collection_accessor, :parent, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :identifier, :url_template
@@ -20,24 +20,17 @@ module Klient
       @parent = parent
       @headers = @parent.headers
       @url_template = Addressable::Template.new(
-        @parent.url_template.pattern + self.class.url_template.pattern
+        @parent.url + self.class.url_template.pattern
       )
     end
 
     def inspect
-      "#<#{self.class.name}:#{object_id} @url_template=#{@url_template.inspect}>"
+      "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
     end
 
     %i(delete get head).each do |mth|
-      define_method(mth) do |identifier = nil, params = {}|
-        if identifier
-          url = @url_template.expand(@identifier => identifier).to_s
-        elsif @params
-          url = @url_template.expand(**@params).to_s
-        else
-          url = @url_template.expand({}).to_s
-        end
-
+      define_method(mth) do |params = {}|
+      # define_method(mth) do |identifier = nil, params = {}|
         @last_response = process_raw_response(
           RestClient.send(mth, url, @headers)
         )
@@ -45,15 +38,10 @@ module Klient
     end
 
     %i(post put).each do |mth|
-      define_method(mth) do |identifier=nil, doc, **params|
-        if identifier
-          url = @url_template.expand(**@url_arguments).to_s
-        else
-          url = @url_template.expand(**@url_arguments).to_s
-        end
+      define_method(mth) do |doc, **params|
 
         @last_response = process_raw_response(
-          RestClient.send(mth, url, @headers)
+          RestClient.send(mth, url, doc.to_json, @headers)
         )
       end
     end
@@ -68,6 +56,11 @@ module Klient
 
     def respond_to_missing?(mth, *args)
       @last_response.respond_to?(mth)
+    end
+
+    # TODO: Should be a getter.
+    def url
+      @url_template.expand(@url_arguments).to_s
     end
 
     private
