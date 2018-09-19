@@ -1,4 +1,8 @@
 module ResourceMethods
+  def default_collection_accessor(sym)
+    @collection_accessor = sym
+  end
+
   def resource(name, template = nil, &block)
     klass_name = name.to_s.camelcase
 

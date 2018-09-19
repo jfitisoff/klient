@@ -1,2 +1,2 @@
 # klient
-Some REST client library I've started goofing around with.
+A REST client library I've started goofing around with.

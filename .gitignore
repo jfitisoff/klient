@@ -9,3 +9,5 @@ rdoc
 /doc
 .ruby-version
 console.rb
+spec/support/marqeta_api.rb
+scratchpad.rb
