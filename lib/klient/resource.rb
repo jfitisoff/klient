@@ -82,7 +82,11 @@ module Klient
 
     # TODO: Need a better approach but this'll work for the moment.
     def method_missing(mth, *args, &block)
-      @last_response.send(mth, *args, &block)
+      if mth.to_s =~ /^http_(\d+)/
+        status_code == $1.to_i
+      else
+        @last_response.send(mth, *args, &block)
+      end
     end
     # def method_missing(mth, *args, &block)
     #   if @last_response.respond_to?(mth)
