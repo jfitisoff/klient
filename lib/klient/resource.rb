@@ -3,7 +3,6 @@ require 'rest-client'
 
 module Klient
   class Resource
-    # attr_reader :collection_accessor, :identifier, :last_response, :name, :parent, :headers, :url_arguments, :url_template
     attr_reader :collection_accessor, :parent, :url, :url_arguments, :url_template
 
     class << self
@@ -11,6 +10,10 @@ module Klient
     end
 
     extend ResourceMethods
+
+    def attributes
+      @last_response.try(:parsed_body) || OpenStruct.new
+    end
 
     def initialize(parent)
       @collection_accessor = parent.class.instance_variable_get(:@collection_accessor)
@@ -65,17 +68,21 @@ module Klient
       end
     end
 
+    # TODO: Need a better approach but this'll work for the moment.
     def method_missing(mth, *args, &block)
-      if @last_response.respond_to?(mth)
-        @last_response.send(mth, *args, &block)
-      else
-        super
-      end
+      @last_response.send(mth, *args, &block)
     end
+    # def method_missing(mth, *args, &block)
+    #   if @last_response.respond_to?(mth)
+    #     @last_response.send(mth, *args, &block)
+    #   else
+    #     super
+    #   end
+    # end
 
-    def respond_to_missing?(mth, *args)
-      @last_response.respond_to?(mth)
-    end
+    # def respond_to_missing?(mth, *args)
+    #   @last_response.respond_to?(mth)
+    # end
 
     # TODO: Should be a getter.
     def url
