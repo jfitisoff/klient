@@ -3,7 +3,7 @@ require 'rest-client'
 
 module Klient
   class Resource
-    attr_reader :collection_accessor, :parent, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :last_response, :parent, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :identifier, :url_template
@@ -121,10 +121,16 @@ module Klient
         else
           tmp = self.class.new(parent)
           tmp.url_arguments[@identifier]= doc.send(@identifier)
+          r = Response.new(resp)
+
+          # Update the CURRENT resource
+          @last_response = r
+
           tmp.instance_variable_set(
             :@last_response,
-            Response.new(resp)
+            r
           )
+          @
           tmp
         end
       else
