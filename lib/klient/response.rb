@@ -12,7 +12,7 @@ module Klient
     end
 
     def status_code
-      @last_response.status_code
+      @original_response.status_code
     end
 
     def headers
