@@ -80,18 +80,19 @@ module Klient
       end
     end
 
-    # TODO: Need a better approach but this'll work for the moment.
+    # TODO: Need a better approach.
     def method_missing(mth, *args, &block)
-      if mth.to_s =~ /^http_(\d{3})\?$/
-        status_code == $1.to_i
-      else
+      # if mth.to_s =~ /^http_(\d{3})\?$/
+      #   status_code == $1.to_i
+      # else
         @last_response.send(mth, *args, &block)
-      end
+      # end
     end
 
-    def respond_to_missing?(mth, *args)
-      mth.to_s =~ /^http_\d{3}\?$/ || @last_response.respond_to?(mth)
-    end
+    # def respond_to_missing?(mth, *args)
+
+      # mth.to_s =~ /^http_\d{3}\?$/ || @last_response.respond_to?(mth)
+    # end
 
     # def method_missing(mth, *args, &block)
     #   if @last_response.respond_to?(mth)
