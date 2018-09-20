@@ -26,6 +26,8 @@ Gem::Specification.new do |s|
     "lib/klient/klient.rb",
     "lib/klient/resource.rb",
     "lib/klient/resource_methods.rb",
+    "lib/klient/response.rb",
+    "lib/klient/response_data.rb",
     "lib/klient/version.rb"
   ]
 
