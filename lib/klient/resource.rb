@@ -27,20 +27,25 @@ module Klient
       "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
     end
 
-# TODO: Fix collection requests with resource identifier (works but messy.)
     %i(delete get head).each do |mth|
-      define_method(mth) do |identifier = nil, params = {}|
+      define_method(mth) do |identifier = nil, **params|
+        if params.empty?
+          hsh = @headers
+        else
+          hsh = @headers.merge({params: params})
+        end
+
         if identifier
           @last_response = process_raw_response(
             RestClient.send(
               mth,
               @url_template.expand(@url_arguments.keys.first => identifier).to_s,
-              @headers
+              hsh
             )
           )
         else
           @last_response = process_raw_response(
-            RestClient.send(mth, url, @headers)
+            RestClient.send(mth, url, hsh)
           )
         end
       end
@@ -48,8 +53,14 @@ module Klient
 
     %i(post put).each do |mth|
       define_method(mth) do |identifier = nil, doc, **params|
+        if params.empty?
+          hsh = @headers
+        else
+          hsh = @headers.merge({params: params})
+        end
+
         @last_response = process_raw_response(
-          RestClient.send(mth, url, doc.to_json, @headers)
+          RestClient.send(mth, url, doc.to_json, hsh)
         )
       end
     end
