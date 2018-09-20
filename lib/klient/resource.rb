@@ -39,7 +39,7 @@ module Klient
         end
 
         if identifier
-          @last_response = process_raw_response(
+          out = process_raw_response(
             RestClient.send(
               mth,
               @url_template.expand(@url_arguments.keys.first => identifier).to_s,
@@ -47,10 +47,13 @@ module Klient
             )
           )
         else
-          @last_response = process_raw_response(
+          out = process_raw_response(
             RestClient.send(mth, url, hsh)
           )
         end
+
+        @last_response = out.last_response
+        out
       end
     end
 
@@ -62,9 +65,12 @@ module Klient
           hsh = @headers.merge({params: params})
         end
 
-        @last_response = process_raw_response(
+        out = process_raw_response(
           RestClient.send(mth, url, doc.to_json, hsh)
         )
+
+        @last_response = out.last_response
+        out
       end
     end
 
@@ -112,6 +118,7 @@ module Klient
           arr.map do |res|
             tmp = self.class.new(parent)
             tmp.url_arguments[@identifier]= res.send(@identifier)
+
             tmp.instance_variable_set(
               :@last_response,
               ResponseData.new(resp.code, res)
@@ -121,14 +128,10 @@ module Klient
         else
           tmp = self.class.new(parent)
           tmp.url_arguments[@identifier]= doc.send(@identifier)
-          r = Response.new(resp)
-
-          # Update the CURRENT resource
-          @last_response = r
 
           tmp.instance_variable_set(
             :@last_response,
-            r
+            Response.new(resp)
           )
           tmp
         end
