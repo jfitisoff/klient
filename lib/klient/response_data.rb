@@ -20,13 +20,13 @@ module Klient
     end
 
     def method_missing(mth, *args, &block)
-      if mth.to_s =~ /http_(\d+)\?/
-        status_code == $1.to_i
-      elsif @parsed_body.respond_to?(mth)
+      # if mth.to_s =~ /http_(\d+)\?/
+      #   status_code == $1.to_i
+      # elsif @parsed_body.respond_to?(mth)
         @parsed_body.send(mth, *args, &block)
-      else
-        super
-      end
+      # else
+      #   super
+      # end
     end
 
     def respond_to_missing?(mth, *args)
