@@ -90,7 +90,7 @@ module Klient
     end
 
     def respond_to_missing?(mth, *args)
-      mth.to_s =~ /^http_\d{3}\?$/
+      mth.to_s =~ /^http_\d{3}\?$/ || @last_response.respond_to?(mth)
     end
 
     # def method_missing(mth, *args, &block)
