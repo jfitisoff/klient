@@ -12,7 +12,6 @@ module Klient
     extend ResourceMethods
 
     def attributes
-      # TODO: Don't allow modification.
       @last_response.try(:parsed_body) || OpenStruct.new
     end
 

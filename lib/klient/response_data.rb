@@ -12,7 +12,7 @@ module Klient
 
     def initialize(status_code, parsed_body)
       @status_code = status_code
-      @parsed_body = parsed_body
+      @parsed_body = parsed_body.freeze
     end
 
     def ok?
