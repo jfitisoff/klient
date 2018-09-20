@@ -130,7 +130,6 @@ module Klient
             :@last_response,
             r
           )
-          @
           tmp
         end
       else
