@@ -52,7 +52,7 @@ module Klient
           )
         end
 
-        @last_response = out.last_response
+        @last_response = out.last_response if respond_to? :last_response
         out
       end
     end
@@ -69,7 +69,7 @@ module Klient
           RestClient.send(mth, url, doc.to_json, hsh)
         )
 
-        @last_response = out.last_response
+        @last_response = out.last_response if respond_to? :last_response
         out
       end
     end
