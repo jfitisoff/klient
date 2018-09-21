@@ -3,14 +3,17 @@ require 'rest-client'
 
 module Klient
   class Resource
-    # attr_reader :collection_accessor, :identifier, :last_response, :name, :parent, :headers, :url_arguments, :url_template
-    attr_reader :collection_accessor, :parent, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :last_response, :parent, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :identifier, :url_template
     end
 
     extend ResourceMethods
+
+    def attributes
+      @last_response.try(:parsed_body) || OpenStruct.new
+    end
 
     def initialize(parent)
       @collection_accessor = parent.class.instance_variable_get(:@collection_accessor)
@@ -27,44 +30,81 @@ module Klient
       "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
     end
 
-# TODO: Fix collection requests with resource identifier (works but messy.)
     %i(delete get head).each do |mth|
-      define_method(mth) do |identifier = nil, params = {}|
+      define_method(mth) do |identifier = nil, **params|
+        if params.empty?
+          hsh = @headers
+        else
+          hsh = @headers.merge({params: params})
+        end
+
         if identifier
-          @last_response = process_raw_response(
+          out = process_raw_response(
             RestClient.send(
               mth,
               @url_template.expand(@url_arguments.keys.first => identifier).to_s,
-              @headers
+              hsh
             )
           )
         else
-          @last_response = process_raw_response(
-            RestClient.send(mth, url, @headers)
+          out = process_raw_response(
+            RestClient.send(mth, url, hsh)
           )
         end
+
+        if respond_to?(:last_response) && out.respond_to?(:last_response)
+          @last_response = out.last_response
+        end
+
+        out
       end
     end
 
     %i(post put).each do |mth|
       define_method(mth) do |identifier = nil, doc, **params|
-        @last_response = process_raw_response(
-          RestClient.send(mth, url, doc.to_json, @headers)
+        if params.empty?
+          hsh = @headers
+        else
+          hsh = @headers.merge({params: params})
+        end
+
+        out = process_raw_response(
+          RestClient.send(mth, url, doc.to_json, hsh)
         )
+
+        if respond_to?(:last_response) && out.respond_to?(:last_response)
+          @last_response = out.last_response
+        end
+
+        out
       end
     end
 
+    # TODO: Need a better approach.
     def method_missing(mth, *args, &block)
-      if @last_response.respond_to?(mth)
+      # if mth.to_s =~ /^http_(\d{3})\?$/
+      #   status_code == $1.to_i
+      # else
         @last_response.send(mth, *args, &block)
-      else
-        super
-      end
+      # end
     end
 
-    def respond_to_missing?(mth, *args)
-      @last_response.respond_to?(mth)
-    end
+    # def respond_to_missing?(mth, *args)
+
+      # mth.to_s =~ /^http_\d{3}\?$/ || @last_response.respond_to?(mth)
+    # end
+
+    # def method_missing(mth, *args, &block)
+    #   if @last_response.respond_to?(mth)
+    #     @last_response.send(mth, *args, &block)
+    #   else
+    #     super
+    #   end
+    # end
+
+    # def respond_to_missing?(mth, *args)
+    #   @last_response.respond_to?(mth)
+    # end
 
     # TODO: Should be a getter.
     def url
@@ -94,6 +134,7 @@ module Klient
           arr.map do |res|
             tmp = self.class.new(parent)
             tmp.url_arguments[@identifier]= res.send(@identifier)
+
             tmp.instance_variable_set(
               :@last_response,
               ResponseData.new(resp.code, res)
@@ -103,6 +144,7 @@ module Klient
         else
           tmp = self.class.new(parent)
           tmp.url_arguments[@identifier]= doc.send(@identifier)
+
           tmp.instance_variable_set(
             :@last_response,
             Response.new(resp)

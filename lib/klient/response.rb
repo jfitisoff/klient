@@ -28,6 +28,7 @@ module Klient
       else
         @parsed_body = JSON.parse(original_response.body, object_class: OpenStruct)
       end
+      @parsed_body.freeze
 
       @parsed_headers = OpenStruct.new(original_response.headers)
     end
