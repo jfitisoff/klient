@@ -1,5 +1,5 @@
 # klient
-A REST client library I've started working on. I only recently started on it and it's pretty basic. DANGER! DON'T USE THIS FOR REAL WORK. :-)
+A REST client library I'm working on. I've only recently started on it and it has a long way to go before it might be worth using.
 
 ## postcodes.io client example:
 ```ruby
@@ -39,7 +39,7 @@ results = api.postcodes.post(postcodes: ["OX49 5NU", "M32 0JG", "NE30 1DP"])
  #<Postcodes::Postcodes:70243439925820 @url="https://api.postcodes.io/postcodes/NE30%201DP">]
 
 # Gets a random postcode.
-# BUG: Note that in the case below the constructed resource doesn't include the 
+# BUG: Note that in the case below the constructed resource doesn't include the
 # resource identifier. I have a plan in mind for dealing with that but haven't
 # gotten to it yet.
 resource = api.random.postcodes.get
