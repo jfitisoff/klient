@@ -3,7 +3,7 @@ require 'rest-client'
 
 module Klient
   class Resource
-    attr_reader :collection_accessor, :last_response, :parent, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :headers, :last_response, :parent, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :identifier, :url_template
@@ -16,9 +16,13 @@ module Klient
     end
 
     def initialize(parent)
-      @collection_accessor = parent.class.instance_variable_get(:@collection_accessor)
+      @collection_accessor = parent.collection_accessor
       @identifier = self.class.try(:identifier)
-      @url_arguments = {@identifier => nil}
+      if @identifier
+        @url_arguments = {@identifier => nil}
+      else
+        @url_arguments = {}
+      end
       @parent = parent
       @headers = @parent.headers
       @url_template = Addressable::Template.new(
@@ -130,16 +134,34 @@ module Klient
       doc = JSON.parse(resp.body, object_class: OpenStruct)
 
       if @collection_accessor
-        if arr = doc.try(@collection_accessor)
-          arr.map do |res|
+        if data = doc.try(@collection_accessor)
+          if data.is_a?(Array)
+            data.map! do |res|
+              tmp = self.class.new(parent)
+              # TODO: Ugly. Revisit after recursive lookup.
+              tmp.url_arguments[@identifier]= res.send(@identifier) ||
+                res.send(@collection_accessor).try(@identifier)
+
+              tmp.instance_variable_set(
+                :@last_response,
+                ResponseData.new(resp.code, res)
+              )
+              tmp
+            end
+
+            return data
+          else
             tmp = self.class.new(parent)
-            tmp.url_arguments[@identifier]= res.send(@identifier)
+            if @identifier
+              tmp.url_arguments[@identifier]= doc.send(@identifier)
+            end
 
             tmp.instance_variable_set(
               :@last_response,
-              ResponseData.new(resp.code, res)
+              Response.new(resp)
             )
-            tmp
+
+            return tmp
           end
         else
           tmp = self.class.new(parent)
@@ -149,7 +171,8 @@ module Klient
             :@last_response,
             Response.new(resp)
           )
-          tmp
+
+          return tmp
         end
       else
         raise "Must define a default collection accessor right now."

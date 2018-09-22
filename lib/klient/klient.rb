@@ -1,7 +1,7 @@
 require_relative "resource"
 require_relative "resource_methods"
 module Klient
-  attr_reader :base_url, :headers, :collection_key, :url_template
+  attr_reader :base_url, :collection_accessor, :headers, :collection_key, :url_template
 
   module KlientClassMethods
     include ResourceMethods
