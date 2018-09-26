@@ -84,33 +84,11 @@ module Klient
       end
     end
 
-    # TODO: Need a better approach.
+    # TODO: Bandaid just to get the initial stuff working to some extent.
     def method_missing(mth, *args, &block)
-      # if mth.to_s =~ /^http_(\d{3})\?$/
-      #   status_code == $1.to_i
-      # else
         @last_response.send(mth, *args, &block)
-      # end
     end
 
-    # def respond_to_missing?(mth, *args)
-
-      # mth.to_s =~ /^http_\d{3}\?$/ || @last_response.respond_to?(mth)
-    # end
-
-    # def method_missing(mth, *args, &block)
-    #   if @last_response.respond_to?(mth)
-    #     @last_response.send(mth, *args, &block)
-    #   else
-    #     super
-    #   end
-    # end
-
-    # def respond_to_missing?(mth, *args)
-    #   @last_response.respond_to?(mth)
-    # end
-
-    # TODO: Should be a getter.
     def url
       @url_template.expand(@url_arguments).to_s
     end
@@ -128,8 +106,7 @@ module Klient
     end
 
     # Assumes JSON for the moment.
-    # Doesn't yet cover case where the resource doesn't itself define a business
-    # object but instead returns a preexisting one.
+    # TODO: Mechanism for determining what kind of resource to create and return.
     def process_raw_response(resp)
       doc = JSON.parse(resp.body, object_class: OpenStruct)
 

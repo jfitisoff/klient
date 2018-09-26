@@ -19,14 +19,9 @@ module Klient
       (200..299).include?(status_code)
     end
 
+    # TODO: Bandaid.
     def method_missing(mth, *args, &block)
-      # if mth.to_s =~ /http_(\d+)\?/
-      #   status_code == $1.to_i
-      # elsif @parsed_body.respond_to?(mth)
-        @parsed_body.send(mth, *args, &block)
-      # else
-      #   super
-      # end
+      @parsed_body.send(mth, *args, &block)
     end
 
     def respond_to_missing?(mth, *args)
