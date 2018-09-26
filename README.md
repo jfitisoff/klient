@@ -26,8 +26,9 @@ resource = api.postcodes.get "OX49 5NU"
 resource.status_code
 => 200
 
-# Resource delegates method calls down to last response ('results' isn't a
-# defined method call: It's just part of the document that's getting returned.):
+# Resource delegates method calls down to last response ('result' isn't a
+# defined method call: It's just part of the structure of the document that's
+# getting returned.):
 resource.result.parish
 => "Brightwell Baldwin"
 
