@@ -1,5 +1,8 @@
+require 'rest-client'
 require_relative "resource"
 require_relative "resource_methods"
+# require_relative "resource_collection"
+
 module Klient
   attr_reader :base_url, :collection_accessor, :headers, :collection_key, :url_template
 
@@ -17,5 +20,6 @@ module Klient
     @headers = headers
     @url_template = Addressable::Template.new(base_url)
   end
+
   alias url base_url
 end

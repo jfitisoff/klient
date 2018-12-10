@@ -14,6 +14,8 @@ module ResourceMethods
       # TODO: Avoid identifier conflicts between hash and URL template.
       if template
         @url_template = Addressable::Template.new(template)
+        # TODO: clean this up
+        @identifier = hash_args[:identifier]
       elsif hash_args[:identifier]
         @identifier = hash_args[:identifier]
         @url_template = Addressable::Template.new(

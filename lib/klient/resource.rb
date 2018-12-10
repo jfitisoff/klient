@@ -1,5 +1,5 @@
 require_relative "resource_methods"
-require 'rest-client'
+require_relative "resource_collection"
 
 module Klient
   class Resource
@@ -39,7 +39,7 @@ module Klient
         if params.empty?
           hsh = @headers
         else
-          hsh = @headers.merge({params: params})
+          hsh = @headers.merge(params: params)
         end
 
         if identifier
@@ -51,9 +51,7 @@ module Klient
             )
           )
         else
-          out = process_raw_response(
-            RestClient.send(mth, url, hsh)
-          )
+          out = process_raw_response(RestClient.send(mth, url, hsh))
         end
 
         if respond_to?(:last_response) && out.respond_to?(:last_response)
@@ -126,7 +124,8 @@ module Klient
               tmp
             end
 
-            return data
+            return Klient::ResourceCollection.new(data)
+            # return data
           else
             tmp = self.class.new(parent)
             if @identifier

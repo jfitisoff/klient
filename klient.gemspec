@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">=2.3.0"
 
+  s.add_runtime_dependency "rest-client", [">=2.0.0"]
   s.add_runtime_dependency "activesupport", [">=4.2.5"]
   s.add_runtime_dependency "addressable", [">=2.5.1"]
   s.add_runtime_dependency "nokogiri", [">=1.7.0"]
@@ -25,6 +26,7 @@ Gem::Specification.new do |s|
     "lib/klient.rb",
     "lib/klient/klient.rb",
     "lib/klient/resource.rb",
+    "lib/klient/resource_collection.rb",
     "lib/klient/resource_methods.rb",
     "lib/klient/response.rb",
     "lib/klient/response_data.rb",
