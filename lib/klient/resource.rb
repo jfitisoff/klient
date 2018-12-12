@@ -16,7 +16,7 @@ module Klient
     end
 
     def initialize(parent)
-      @regexp = /#{self.class.name.demodulize.gsub(/(_|-|\s+)/, "(_|-|\s*)")}/i
+      @regexp = /#{self.class.name.demodulize.underscore.gsub(/(_|-|\s+)/, "(_|-|\s*)")}/i
       @collection_accessor = self.class.try(:identifier)
       @identifier = self.class.try(:identifier)
       if @identifier
@@ -117,8 +117,9 @@ module Klient
     def process_raw_response(resp)
       doc = JSON.parse(resp.body, object_class: OpenStruct)
       hsh = JSON.parse(resp.body)
+
       # TODO: Rewrite
-       if ridentifier = @url_template.match(resp.request.args[:url]).mapping[@identifier]
+      if ridentifier = @url_template.match(resp.request.args[:url]).mapping[@identifier]
         tmp = self.class.new(parent)
         tmp.url_arguments[@identifier]= doc.send(ridentifier)
 
@@ -137,7 +138,6 @@ module Klient
 
         return tmp
       elsif key = hsh.keys.find { |k| k.to_s =~ @regexp }
-p 2
         if data = doc[key]
           if data.is_a?(Array)
             data.map! do |res|
@@ -157,9 +157,7 @@ p 2
               )
               tmp
             end
-
             return Klient::ResourceCollection.new(data)
-            # return data
           else
             tmp = self.class.new(parent)
             if @identifier
@@ -185,6 +183,7 @@ p 2
         elsif @collection_accessor
           if data = doc.try(@collection_accessor)
             if data.is_a?(Array)
+
               data.map! do |res|
                 tmp = self.class.new(parent)
                 # TODO: Ugly. Revisit after recursive lookup.
@@ -197,10 +196,10 @@ p 2
                 )
                 tmp
               end
-
               return Klient::ResourceCollection.new(data)
               # return data
             else
+
               tmp = self.class.new(parent)
               if @identifier
                 tmp.url_arguments[@identifier]= doc.send(@identifier)
@@ -210,7 +209,6 @@ p 2
                 :@last_response,
                 Response.new(resp)
               )
-
               return tmp
             end
           end
@@ -225,49 +223,49 @@ p 2
 
           return tmp
         end
-      # elsif doc.is_a?(Array)
-      #   data.map! do |res|
-      #     tmp = self.class.new(parent)
-      #     # TODO: Ugly. Revisit after recursive lookup.
-      #     tmp.url_arguments[@identifier]= res.send(@identifier) ||
-      #       res.send(@collection_accessor).try(@identifier)
-      #
-      #     tmp.instance_variable_set(
-      #       :@last_response,
-      #       ResponseData.new(resp.code, res)
-      #     )
-      #     tmp
-      #   end
-      #   return Klient::ResourceCollection.new(data)
-      # elsif doc.try(:keys) && doc.keys.length == 0 and doc[doc.keys.first].is_a?(Array)
-      #   data = doc[doc.keys.first]
-      #
-      #   data.map! do |res|
-      #     tmp = self.class.new(parent)
-      #     # TODO: Ugly. Revisit after recursive lookup.
-      #     tmp.url_arguments[@identifier]= res.send(@identifier) ||
-      #       res.send(@collection_accessor).try(@identifier)
-      #
-      #     tmp.instance_variable_set(
-      #       :@last_response,
-      #       ResponseData.new(resp.code, res)
-      #     )
-      #     tmp
-      #   end
-      #
-      #   return Klient::ResourceCollection.new(data)
-      # else
-      #   tmp = self.class.new(parent)
-      #   if @identifier
-      #     tmp.url_arguments[@identifier]= doc.send(@identifier)
-      #   end
-      #
-      #   tmp.instance_variable_set(
-      #     :@last_response,
-      #     Response.new(resp)
-      #   )
-      #
-      #   return tmp
+      elsif doc.is_a?(Array)
+        data.map! do |res|
+          tmp = self.class.new(parent)
+          # TODO: Ugly. Revisit after recursive lookup.
+          tmp.url_arguments[@identifier]= res.send(@identifier) ||
+            res.send(@collection_accessor).try(@identifier)
+
+          tmp.instance_variable_set(
+            :@last_response,
+            ResponseData.new(resp.code, res)
+          )
+          tmp
+        end
+        return Klient::ResourceCollection.new(data)
+      elsif doc.try(:keys) && doc.keys.length == 0 and doc[doc.keys.first].is_a?(Array)
+        data = doc[doc.keys.first]
+
+        data.map! do |res|
+          tmp = self.class.new(parent)
+          # TODO: Ugly. Revisit after recursive lookup.
+          tmp.url_arguments[@identifier]= res.send(@identifier) ||
+            res.send(@collection_accessor).try(@identifier)
+
+          tmp.instance_variable_set(
+            :@last_response,
+            ResponseData.new(resp.code, res)
+          )
+          tmp
+        end
+
+        return Klient::ResourceCollection.new(data)
+      else
+        tmp = self.class.new(parent)
+        if @identifier
+          tmp.url_arguments[@identifier]= doc.send(@identifier)
+        end
+
+        tmp.instance_variable_set(
+          :@last_response,
+          Response.new(resp)
+        )
+
+        return tmp
       end
     end
   end
