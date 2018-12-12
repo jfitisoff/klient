@@ -4,6 +4,7 @@ require_relative "resource_methods"
 # require_relative "resource_collection"
 
 module Klient
+  # SUBSTITUTION = "(_|-|\s*)"
   attr_reader :base_url, :collection_accessor, :headers, :collection_key, :url_template
 
   module KlientClassMethods
