@@ -3,7 +3,7 @@ require_relative "resource_collection"
 require 'pry'
 module Klient
   class Resource
-    attr_reader :collection_accessor, :headers, :id, :last_response, :parent, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :header_proc, :headers, :id, :last_response, :parent, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :id, :identifier, :mapping, :url_template
@@ -16,8 +16,8 @@ module Klient
     end
 
     def initialize(parent)
+      @header_proc = parent.header_proc
       @regexp = /#{self.class.name.demodulize.underscore.gsub(/(_|-|\s+)/, "(_|-|\s*)")}/i
-      # @collection_accessor = self.class.try(:identifier)
       @id = self.class.try(:id)
       @collection_accessor = @identifier = self.class.try(:identifier)
 
@@ -27,18 +27,9 @@ module Klient
         @url_arguments = {}
       end
 
-      # if @identifier
-      #   @url_arguments = {@identifier => nil}
-      # else
-      #   @url_arguments = {}
-      # end
-
       @parent = parent
-      @headers = @parent.headers
-# p '-'
-# p @parent.url
-# p self.class.url_template
-# p '-'
+      @headers = {}
+
       @url_template = Addressable::Template.new(
         @parent.url + self.class.url_template.pattern
       )
@@ -48,14 +39,13 @@ module Klient
       "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
     end
 
-    # Experimental
     %i(delete get head).each do |mth|
       define_method(mth) do |identifier = nil, **params|
 
         if params.empty?
-          hsh = @headers
+          @headers = @header_proc.call
         else
-          hsh = @headers.merge(params: params)
+          @headers = @header_proc.call.merge(params: params)
         end
 
         if identifier
@@ -63,11 +53,13 @@ module Klient
             RestClient.send(
               mth,
               @url_template.expand(@id => identifier).to_s,
-              hsh
+              @headers
+              # hsh
             )
           )
         else
-          out = process_response(RestClient.send(mth, url, hsh))
+          # out = process_response(RestClient.send(mth, url, hsh))
+          out = process_response(RestClient.send(mth, url, @headers))
         end
 
         if respond_to?(:last_response) && out.respond_to?(:last_response)
@@ -81,14 +73,21 @@ module Klient
 
     %i(post put).each do |mth|
       define_method(mth) do |identifier = nil, doc, **params|
+        # if params.empty?
+        #   hsh = @headers
+        # else
+        #   hsh = @headers.merge({params: params})
+        # end
+
         if params.empty?
-          hsh = @headers
+          @headers = @header_proc.call
         else
-          hsh = @headers.merge({params: params})
+          @headers = @header_proc.call.merge(params: params)
         end
 
         out = process_response(
-          RestClient.send(mth, url, doc.to_json, hsh)
+          # RestClient.send(mth, url, doc.to_json, hsh)
+          RestClient.send(mth, url, doc.to_json, @headers)
         )
 
         if respond_to?(:last_response) && out.respond_to?(:last_response)

@@ -3,6 +3,10 @@ module ResourceMethods
     @collection_accessor = sym
   end
 
+  def set_header_proc(&block)
+    @header_proc = block
+  end
+
   def collection(name, template = nil, **hash_args, &block)
     klass_name = name.to_s.camelcase
 
