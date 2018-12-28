@@ -8,9 +8,18 @@ class Postcodes
     super("https://api.postcodes.io", content_type: :json, accept: :json)
   end
 
-  collection :postcodes, identifier: :postcode
+  collection :postcodes do |postcode|
+    resources :autocomplete, :nearest, :validate
+  end
+
+  collection :outcodes do |outcode|
+    resource :nearest
+  end
 
   resource :random do
     resource :postcodes
+  end
+
+  collection :terminated_postcodes do |postcode|
   end
 end
