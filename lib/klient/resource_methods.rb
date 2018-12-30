@@ -13,10 +13,10 @@ module ResourceMethods
     klass = Class.new(Klient::Resource) do
       # Obtain the collection's resource identifier. Don't allow hash arg AND block
       # param for same thing -- it has to be either one or the other.
-      if block.arity > 0 && hash_args[:identifier]
+      if block_given? && block.arity > 0 && hash_args[:identifier]
         raise ArgumentError, "Collection identifier for :#{name} can be specified as a " \
         "hash argument OR a block parameter (You can't use both simultaneously.)"
-      elsif block.arity > 0
+      elsif block_given? && block.arity > 0
         @id = block.parameters[0][1]
       elsif hash_args[:identifier]
         @id = hash_args[:identifier]
