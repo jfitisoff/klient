@@ -1,7 +1,7 @@
 require 'json'
 module Klient
   class Response
-    attr_reader :original_response, :parsed_body, :parsed_headers
+    attr_reader :original_response, :parsed_body, :parsed_headers, :status
 
     def body
       @original_response.body
@@ -19,27 +19,36 @@ module Klient
       @parsed_headers
     end
 
-    def initialize(original_response)
-      @original_response = original_response
-      @body = original_response.body
+    def initialize(original_response, data = nil)
+      @status = original_response.code
 
-      if original_response.body.to_s.empty?
-        @parsed_body = OpenStruct.new
+      # If data arg is provided then it's a collection resource and the original
+      # response is for the entire collection. We don't want that -- this is an
+      # individual resource FOR the collection -- so the data arg is used in place
+      # of the parsed body for the collection response.
+      if data
+        @original_response = nil
+        @parsed_body = data
+        @parsed_headers = nil
       else
-        @parsed_body = JSON.parse(original_response.body, object_class: OpenStruct)
-      end
-      @parsed_body.freeze
+        @original_response = original_response
+        @body = @original_response.body
+        @parsed_headers = @original_response.headers
 
-      @parsed_headers = OpenStruct.new(original_response.headers)
+        if @original_response.body.blank?
+           @parsed_body = {}
+        else
+          @parsed_body = JSON.parse(@original_response.body)
+        end
+      end
     end
 
+    # TODO: This is dangerously wrong. It's just a shortcut to get something working.
     def method_missing(mth, *args, &block)
       if mth.to_s =~ /http_(\d+)\?/
         status_code == $1.to_i
-      elsif @parsed_body.respond_to?(mth)
-        @parsed_body.send(mth, *args, &block)
       else
-        super
+        @parsed_body.send(mth)
       end
     end
 
