@@ -4,12 +4,12 @@ class Postcodes
 
   default_collection_accessor :result
 
-  set_header_proc do
+  headers do
     { content_type: :json, accept: :json }
   end
 
   def initialize
-    super("https://api.postcodes.io", content_type: :json, accept: :json)
+    super("https://api.postcodes.io")
   end
 
   collection :postcodes do |postcode|

@@ -3,7 +3,7 @@ module ResourceMethods
     @collection_accessor = sym
   end
 
-  def set_header_proc(&block)
+  def headers(&block)
     @header_proc = block
   end
 

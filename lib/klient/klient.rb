@@ -15,7 +15,7 @@ module Klient
     klass.send(:attr_reader, :header_proc)
   end
 
-  def initialize(base_url, headers = {})
+  def initialize(base_url)
     @header_proc = self.class.header_proc
     @collection_accessor = self.class.instance_variable_get(:@collection_accessor)
     @base_url = base_url

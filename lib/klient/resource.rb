@@ -3,17 +3,13 @@ require_relative "resource_collection"
 require 'pry'
 module Klient
   class Resource
-    attr_reader :collection_accessor, :header_proc, :headers, :id, :last_response, :parent, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :header_proc, :headers, :id, :last_response, :parent, :status, :url, :url_arguments, :url_template
 
     class << self
       attr_reader :collection_accessor, :id, :identifier, :mapping, :url_template
     end
 
     extend ResourceMethods
-
-    def attributes
-      @last_response.try(:parsed_body) || OpenStruct.new
-    end
 
     def initialize(parent)
       @header_proc = parent.header_proc
@@ -36,7 +32,7 @@ module Klient
     end
 
     def inspect
-      "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect}>"
+      "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect} @status_code=#{self.last_response.try(:status)}>"
     end
 
     %i(delete get head).each do |mth|
@@ -54,11 +50,9 @@ module Klient
               mth,
               @url_template.expand(@id => identifier).to_s,
               @headers
-              # hsh
             )
           )
         else
-          # out = process_response(RestClient.send(mth, url, hsh))
           out = process_response(RestClient.send(mth, url, @headers))
         end
 
@@ -73,12 +67,6 @@ module Klient
 
     %i(post put).each do |mth|
       define_method(mth) do |identifier = nil, doc, **params|
-        # if params.empty?
-        #   hsh = @headers
-        # else
-        #   hsh = @headers.merge({params: params})
-        # end
-
         if params.empty?
           @headers = @header_proc.call
         else
@@ -86,7 +74,6 @@ module Klient
         end
 
         out = process_response(
-          # RestClient.send(mth, url, doc.to_json, hsh)
           RestClient.send(mth, url, doc.to_json, @headers)
         )
 
@@ -97,11 +84,6 @@ module Klient
         out.instance_variable_set(:@identifier, identifier)
         out
       end
-    end
-
-    # TODO: Bandaid just to get the initial stuff working to some extent.
-    def method_missing(mth, *args, &block)
-      @last_response.send(mth, *args, &block)
     end
 
     def url
@@ -128,20 +110,18 @@ module Klient
       end
     end
 
-    # EXPERIMENTAL
+    # EXPERIMENTAL (USING HASH MODS)
     def process_response(resp)
-      # doc = JSON.parse(resp.body, object_class: OpenStruct)
-      # parsed = JSON.parse(resp.body).with_indifferent_access
-      parsed = resp.body.to_data
+      parsed = JSON.parse(resp.body)#.to_data
 
       # TODO: Rewrite
       @mapping = @url_template.match(resp.request.args[:url]).mapping.with_indifferent_access
       tmp = self.class.new(parent)
-
       # It's a resource if mapping responds to id. Otherwise, it's a collection.
       if @mapping[@id] || @url_template.variables.empty? # Ugly
         tmp.url_arguments[@id]= @mapping[@id]
         tmp.instance_variable_set(:@last_response, Response.new(resp))
+        return tmp
       else
         if parsed.source.is_a?(Array)
           arr = parsed
@@ -149,7 +129,7 @@ module Klient
           arr = parsed[parsed.keys.first]
         else
           parsed.keys.each do |k|
-            if parsed[k].is_a?(ParsedData) && parsed[k].source.is_a?(Array) && parsed[k].first.try(:send, @id)
+            if parsed[k].is_a?(Array) && parsed[k].first.send(@id.to_sym)
               arr = parsed[k]
               break
             end
@@ -159,19 +139,17 @@ module Klient
         arr.map! do |res|
           tmp = self.class.new(parent)
           # TODO: Ugly. Revisit after recursive lookup.
-          tmp.url_arguments[@id]= res.to_data.send(@id) ||
-            res.send(@collection_accessor).try(@id)
+          tmp.url_arguments[@id]= res.send(@id) || res.send(@collection_accessor).try(@id)
 
-          tmp.instance_variable_set(
-            :@last_response,
-            ResponseData.new(resp.code, res)
-          )
+          processed = Response.new(resp, res)
+          tmp.instance_variable_set(:@last_response, processed)
 
-          tmp.instance_variable_set(:@parsed_body, parsed)
+          tmp.instance_variable_set(:@parsed_body, processed.parsed_body)
+          tmp.instance_variable_set(:@status, processed.status)
           tmp
         end
 
-        return Klient::ResourceCollection.new(arr.source)
+        return Klient::ResourceCollection.new(arr)
       end
     end
   end
