@@ -11,6 +11,9 @@ module ResourceMethods
     klass_name = name.to_s.camelcase
 
     klass = Class.new(Klient::Resource) do
+      @arguments = hash_args
+      @type = :collection
+
       # Obtain the collection's resource identifier. Don't allow hash arg AND block
       # param for same thing -- it has to be either one or the other.
       if block_given? && block.arity > 0 && hash_args[:identifier]
@@ -21,7 +24,7 @@ module ResourceMethods
       elsif hash_args[:identifier]
         @id = hash_args[:identifier]
       else
-        raise ArgumentError, "#{name} collection definition does not specify a resource identifier."
+        # raise ArgumentError, "#{name} collection definition does not specify a resource identifier."
       end
 
       # Don't allow templates with variables.
@@ -32,10 +35,21 @@ module ResourceMethods
       # Build a URL template if the template arg was provided.
       if template && id
         @url_template = Addressable::Template.new(template.to_s + "{/#{id}}")
-      else
+      elsif id
         @identifier = nil
         @url_template = Addressable::Template.new("/#{name}{/#{id}}")
+      else
+        @identifier = nil
+        @url_template = Addressable::Template.new("/#{name}")
       end
+
+      # # Build a URL template if the template arg was provided.
+      # if template && id
+      #   @url_template = Addressable::Template.new(template.to_s + "{/#{id}}")
+      # else
+      #   @identifier = nil
+      #   @url_template = Addressable::Template.new("/#{name}{/#{id}}")
+      # end
 
       class_eval(&block) if block
     end
@@ -46,10 +60,13 @@ module ResourceMethods
     end
   end
 
-  def resource(name, template = nil, &block)
+  def resource(name, template = nil, **hash_args, &block)
     klass_name = name.to_s.camelcase
 
     klass = Class.new(Klient::Resource) do
+      @arguments = hash_args
+      @type = :resource
+
       # TODO: Avoid identifier conflicts between hash and URL template.
       if template
         @url_template = Addressable::Template.new(template)

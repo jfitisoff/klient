@@ -17,7 +17,7 @@ class Postcodes
   end
 
   collection :outcodes do |outcode|
-    resource :nearest
+    collection :nearest, type: :outcode
   end
 
   resource :random do
