@@ -133,7 +133,11 @@ module Klient
         end
       end
 
-      if parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
+      if klass.url_arguments[klass.id]
+        klass.url_arguments[klass.id]= parsed[klass.id]
+        klass.instance_variable_set(:@last_response, Response.new(resp))
+        return klass  
+      elsif parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
         klass.url_arguments[klass.id]= parsed[klass.id]
         klass.instance_variable_set(:@last_response, Response.new(resp))
         return klass
