@@ -43,14 +43,6 @@ module ResourceMethods
         @url_template = Addressable::Template.new("/#{name}")
       end
 
-      # # Build a URL template if the template arg was provided.
-      # if template && id
-      #   @url_template = Addressable::Template.new(template.to_s + "{/#{id}}")
-      # else
-      #   @identifier = nil
-      #   @url_template = Addressable::Template.new("/#{name}{/#{id}}")
-      # end
-
       class_eval(&block) if block
     end
     const_set(klass_name, klass)
