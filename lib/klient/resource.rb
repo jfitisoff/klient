@@ -3,15 +3,17 @@ require_relative "resource_collection"
 require 'pry'
 module Klient
   class Resource
-    attr_reader :collection_accessor, :header_proc, :headers, :id, :last_response, :parent, :status, :url, :url_arguments, :url_template
+    attr_reader :collection_accessor, :header_proc, :headers, :id, :last_response, :parent, :status, :url, :url_arguments, :url_template,:root
 
     class << self
       attr_reader :collection_accessor, :id, :identifier, :mapping, :url_template
+      attr_accessor :arguments, :resource_type, :type
     end
 
     extend ResourceMethods
 
     def initialize(parent)
+      @root = parent.root
       @header_proc = parent.header_proc
       @regexp = /#{self.class.name.demodulize.underscore.gsub(/(_|-|\s+)/, "(_|-|\s*)")}/i
       @id = self.class.try(:id)
@@ -32,7 +34,7 @@ module Klient
     end
 
     def inspect
-      "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect} @status_code=#{self.last_response.try(:status)}>"
+      "#<#{self.class.name}:#{object_id} @url=#{self.url.inspect} @status_code=#{self.last_response.try(:status) || 'nil'}>"
     end
 
     %i(delete get head).each do |mth|
@@ -72,9 +74,8 @@ module Klient
         else
           @headers = @header_proc.call.merge(params: params)
         end
-
         out = process_response(
-          RestClient.send(mth, url, doc.to_json, @headers)
+          RestClient.send(mth, url, doc, @headers)
         )
 
         if respond_to?(:last_response) && out.respond_to?(:last_response)
@@ -114,22 +115,68 @@ module Klient
     def process_response(resp)
       parsed = JSON.parse(resp.body)#.to_data
 
-      # TODO: Rewrite
-      @mapping = @url_template.match(resp.request.args[:url]).mapping.with_indifferent_access
-      tmp = self.class.new(parent)
-      # It's a resource if mapping responds to id. Otherwise, it's a collection.
-      if @mapping[@id] || @url_template.variables.empty? # Ugly
-        tmp.url_arguments[@id]= @mapping[@id]
-        tmp.instance_variable_set(:@last_response, Response.new(resp))
-        return tmp
+      klass_type = self.class.resource_type
+
+      if klass_type == self.class
+        klass = self.class.new(parent)
       else
-        if parsed.source.is_a?(Array)
+        klass = self.class.resource_type.new(@root)
+      end
+
+      if klass_type != self.class
+        if match = klass.url_template.match(resp.request.args[:url])
+          klass.url_arguments[klass.id] = match.mapping.with_indifferent_access[klass.id]
+        end
+      else
+        if match = self.url_template.match(resp.request.args[:url])
+          klass.url_arguments[klass.id] = match.mapping.with_indifferent_access[klass.id]
+        end
+      end
+
+      if klass.url_arguments[klass.id]
+        klass.url_arguments[klass.id]= parsed[klass.id]
+        klass.instance_variable_set(:@last_response, Response.new(resp))
+        return klass  
+      elsif parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
+        klass.url_arguments[klass.id]= parsed[klass.id]
+        klass.instance_variable_set(:@last_response, Response.new(resp))
+        return klass
+      elsif key = parsed.keys.find { |k| k.to_s =~ @regexp }
+        if parsed[key].is_a?(Array)
+          arr = parsed[key].map! do |res|
+            tmp = klass_type.new(@root)
+            # TODO: Ugly. Revisit after recursive lookup.
+            tmp.url_arguments[klass.id]= res.send(klass.id) || res.send(klass.collection_accessor).try(klass.id)
+
+            processed = Response.new(resp, res)
+            tmp.instance_variable_set(:@last_response, processed)
+
+            tmp.instance_variable_set(:@parsed_body, processed.parsed_body)
+            tmp.instance_variable_set(:@status, processed.status)
+            tmp
+          end
+          return Klient::ResourceCollection.new(arr)
+        else
+          klass.url_arguments[klass.id]= parsed.send(klass.id) if klass.id
+          klass.instance_variable_set(:@last_response, Response.new(resp))
+          return klass
+        end
+      elsif self.class.type == :resource
+        klass.url_arguments[klass.id]= parsed.send(klass.id) if klass.id
+        klass.instance_variable_set(:@last_response, Response.new(resp))
+        return klass
+      elsif klass.url_arguments[klass.id]
+        klass.url_arguments[klass.id]= parsed.send(klass.id)
+        klass.instance_variable_set(:@last_response, Response.new(resp))
+        return klass
+      else
+        if parsed.is_a?(Array)
           arr = parsed
-        elsif parsed.keys.length == 1 && parsed[parsed.keys.first].source.is_a?(Array)
+        elsif parsed.keys.length == 1 && parsed[parsed.keys.first].is_a?(Array)
           arr = parsed[parsed.keys.first]
         else
           parsed.keys.each do |k|
-            if parsed[k].is_a?(Array) && parsed[k].first.send(@id.to_sym)
+            if parsed[k].is_a?(Array) && parsed[k].first && parsed[k].first.send(klass.id.to_sym)
               arr = parsed[k]
               break
             end
@@ -137,9 +184,9 @@ module Klient
         end
 
         arr.map! do |res|
-          tmp = self.class.new(parent)
+          tmp = klass_type.new(@root)
           # TODO: Ugly. Revisit after recursive lookup.
-          tmp.url_arguments[@id]= res.send(@id) || res.send(@collection_accessor).try(@id)
+          tmp.url_arguments[klass.id]= res.send(klass.id) || res.send(klass.collection_accessor).try(klass.id)
 
           processed = Response.new(resp, res)
           tmp.instance_variable_set(:@last_response, processed)

@@ -4,6 +4,13 @@ describe "postcodes.io" do
   before(:all) { @api = Postcodes.new }
   let(:api) { @api }
 
+  describe "/outcodes" do
+    it "gets an outcode" do
+      resp = api.outcodes.get('RM12')
+      expect(resp.admin_district.first).to eq("Havering")
+    end
+  end
+
   describe "/postcodes" do
     context "GET" do
       it "gets a specific postcode" do
