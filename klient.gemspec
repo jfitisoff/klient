@@ -4,8 +4,8 @@ Gem::Specification.new do |s|
   s.name        = 'klient'
   s.version     = Klient::VERSION
   s.date        = Time.now.strftime("%Y-%m-%d")
-  s.description = "REST API client library."
-  s.summary     = "REST API client library."
+  s.description = "Experimental REST API client library."
+  s.summary     = "Experimental REST API client library."
   s.authors     = ["John Fitisoff"]
   s.email       = 'jfitisoff@yahoo.com'
 
