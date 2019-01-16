@@ -136,11 +136,11 @@ module Klient
       if klass.url_arguments[klass.id]
         klass.url_arguments[klass.id]= parsed[klass.id]
         klass.instance_variable_set(:@last_response, Response.new(resp))
-        return klass  
-      elsif parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
-        klass.url_arguments[klass.id]= parsed[klass.id]
-        klass.instance_variable_set(:@last_response, Response.new(resp))
         return klass
+      # elsif parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
+      #   klass.url_arguments[klass.id]= parsed[klass.id]
+      #   klass.instance_variable_set(:@last_response, Response.new(resp))
+      #   return klass
       elsif key = parsed.keys.find { |k| k.to_s =~ @regexp }
         if parsed[key].is_a?(Array)
           arr = parsed[key].map! do |res|
