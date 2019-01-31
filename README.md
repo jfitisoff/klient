@@ -40,10 +40,6 @@ results = api.postcodes.post(postcodes: ["OX49 5NU", "M32 0JG", "NE30 1DP"])
  #<Postcodes::Postcodes:70243439925820 @url="https://api.postcodes.io/postcodes/NE30%201DP">]
 
 # Gets a random postcode.
-# BUG: Note that in the case below the constructed resource doesn't include the
-# resource identifier. (The test works because the response data is handled
-# properly.) I plan to add support to infer/define (both) the type of resource
-# that should be built when processing responses. That's next.
 resource = api.random.postcodes.get
 => #<Postcodes::Random::Postcodes:70243435956120 @url="https://api.postcodes.io/random/postcodes">
 resource.result.postcode
