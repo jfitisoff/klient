@@ -132,8 +132,8 @@ module Klient
           klass.url_arguments[klass.id] = match.mapping.with_indifferent_access[klass.id]
         end
       end
-
-      if klass.url_arguments[klass.id]
+# binding.pry
+      if klass.url_arguments[klass.id] || %w(post put).include?(resp.request.method)
         klass.url_arguments[klass.id]= parsed[klass.id]
         klass.instance_variable_set(:@last_response, Response.new(resp))
         return klass
