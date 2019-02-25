@@ -18,7 +18,6 @@ describe "postcodes.io" do
         expect(resp.status_code).to eq 200
       end
 
-
       it "gets nearest postcodes for a given longitude and latitude" do
         resp = api.postcodes.get(lon: 0.629834723775309, lat: 51.7923246977375)
         expect(resp.length).to be > 0
