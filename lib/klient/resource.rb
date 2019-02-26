@@ -132,15 +132,11 @@ module Klient
           klass.url_arguments[klass.id] = match.mapping.with_indifferent_access[klass.id]
         end
       end
-# binding.pry
-      if klass.url_arguments[klass.id] || %w(post put).include?(resp.request.method)
+
+      if klass.url_arguments[klass.id]
         klass.url_arguments[klass.id]= parsed[klass.id]
         klass.instance_variable_set(:@last_response, Response.new(resp))
         return klass
-      # elsif parsed.is_a?(Hash) && parsed.keys.any? { |k| k.to_sym == @root.collection_accessor }
-      #   klass.url_arguments[klass.id]= parsed[klass.id]
-      #   klass.instance_variable_set(:@last_response, Response.new(resp))
-      #   return klass
       elsif key = parsed.keys.find { |k| k.to_s =~ @regexp }
         if parsed[key].is_a?(Array)
           arr = parsed[key].map! do |res|
@@ -174,13 +170,14 @@ module Klient
           arr = parsed
         elsif parsed.keys.length == 1 && parsed[parsed.keys.first].is_a?(Array)
           arr = parsed[parsed.keys.first]
+        elsif x = parsed.keys.find { |k| parsed[k].is_a?(Array) && parsed[k].first && parsed[k].first.send(klass.id.to_sym) }
+          arr = parsed[x]
+        elsif %w(post put).include?(resp.request.method)
+          klass.url_arguments[klass.id]= parsed[klass.id]
+          klass.instance_variable_set(:@last_response, Response.new(resp))
+          return klass
         else
-          parsed.keys.each do |k|
-            if parsed[k].is_a?(Array) && parsed[k].first && parsed[k].first.send(klass.id.to_sym)
-              arr = parsed[k]
-              break
-            end
-          end
+          raise "Unhandled condition."
         end
 
         arr.map! do |res|
